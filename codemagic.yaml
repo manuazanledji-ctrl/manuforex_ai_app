@@ -5,6 +5,8 @@ workflows:
     environment:
       flutter: stable
     scripts:
+      - name: Compléter la structure Android manquante
+        script: flutter create . --platforms=android --org com.manuforex
       - name: Get Flutter packages
         script: flutter packages pub get
       - name: Build APK (debug, pour test rapide)

@@ -1,0 +1,50 @@
+workflows:
+  android-apk:
+    name: ManuForex AI - Build APK
+    max_build_duration: 30
+    environment:
+      flutter: stable
+    scripts:
+      - name: Générer la structure Android (propre, embedding v2)
+        script: flutter create . --platforms=android --org com.manuforex --project-name manuforex_ai_app
+      - name: Corriger le manifeste Android (permissions + nom d'app)
+        script: |
+          python3 - << 'PYEOF'
+          import re
+          path = "android/app/src/main/AndroidManifest.xml"
+          with open(path) as f:
+              content = f.read()
+
+          perms = (
+              '<uses-permission android:name="android.permission.INTERNET"/>\n'
+              '    <uses-permission android:name="android.permission.CAMERA"/>\n'
+              '    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>\n'
+              '    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>\n'
+          )
+          content = content.replace(
+              '<manifest xmlns:android="http://schemas.android.com/apk/res/android">',
+              '<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    ' + perms,
+              1,
+          )
+
+          content = re.sub(r'android:label="[^"]*"', 'android:label="No_Loss AI"', content)
+
+          queries = (
+              '    <queries>\n'
+              '        <intent>\n'
+              '            <action android:name="android.media.action.IMAGE_CAPTURE" />\n'
+              '        </intent>\n'
+              '    </queries>\n'
+          )
+          content = content.replace('</manifest>', queries + '</manifest>')
+
+          with open(path, "w") as f:
+              f.write(content)
+          print("AndroidManifest.xml corrigé avec succès")
+          PYEOF
+      - name: Get Flutter packages
+        script: flutter packages pub get
+      - name: Build APK (debug, pour test rapide)
+        script: flutter build apk --debug
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
